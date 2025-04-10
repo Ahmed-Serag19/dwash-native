@@ -22,7 +22,7 @@ const slides = [
   {
     key: "2",
     title: "تخطى",
-    image: images.logo,
+    image: images.secondSlide,
   },
   {
     key: "3",
@@ -48,12 +48,13 @@ export default function OnboardingScreen() {
         dot={
           <View
             style={{
-              backgroundColor: "#ccc", // Light grey for inactive dot
+              backgroundColor: "#ccc",
               width: 10,
               height: 10,
               borderRadius: 5,
-              marginHorizontal: 3,
+              marginHorizontal: 5,
               bottom: 20,
+              paddingHorizontal: 5,
             }}
           />
         }
@@ -61,11 +62,11 @@ export default function OnboardingScreen() {
           <View
             className="transition-all duration-200"
             style={{
-              backgroundColor: "#007BFF", // Blue for active dot
-              width: 45,
-              height: 15,
+              backgroundColor: "#0a3981",
+              width: 30,
+              height: 10,
               borderRadius: 7.5,
-              marginHorizontal: 3,
+              marginHorizontal: 5,
               bottom: 20,
             }}
           />
@@ -75,34 +76,27 @@ export default function OnboardingScreen() {
         {slides.map((slide) => (
           <View
             key={slide.key}
-            className="flex-1 justify-center items-center px-5 bg-gray-100 "
+            className="flex-1  justify-center items-center  bg-gray-100 "
           >
             <Image
               source={slide.image}
-              className={`mb-10 `}
+              className={`mb-10 ${currentIndex === 0 ? "ml-16" : ""}`}
               resizeMode="contain"
               style={{
                 width: width * 1,
                 height: height * 0.7,
-                marginLeft: 40,
+                // marginLeft: 40,
               }}
             />
             <Text
               onPress={handleSkip}
-              className="text-2xl font-bold text-white px-6 py-2 rounded-lg bg-primary  text-center"
+              className="text-2xl font-bold mb-10 text-white px-6 py-2 rounded-lg bg-primary  text-center"
             >
               {slide.title}
             </Text>
           </View>
         ))}
       </Swiper>
-
-      <TouchableOpacity
-        className="absolute top-12 right-5 p-2.5 bg-white/20 rounded-full px-5"
-        onPress={handleSkip}
-      >
-        <Text className="text-white font-bold">Skip</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
