@@ -26,8 +26,8 @@ const slides = [
   },
   {
     key: "3",
-    title: "تخطى",
-    image: images.logo,
+    title: "ابدأ",
+    image: images.thirdSlide,
   },
 ];
 
@@ -63,7 +63,7 @@ export default function OnboardingScreen() {
             className="transition-all duration-200"
             style={{
               backgroundColor: "#0a3981",
-              width: 30,
+              width: 15,
               height: 10,
               borderRadius: 7.5,
               marginHorizontal: 5,
@@ -76,7 +76,7 @@ export default function OnboardingScreen() {
         {slides.map((slide) => (
           <View
             key={slide.key}
-            className="flex-1  justify-center items-center  bg-gray-100 "
+            className="flex-1  justify-center items-center  bg-gray-100"
           >
             <Image
               source={slide.image}
