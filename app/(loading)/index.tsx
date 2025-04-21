@@ -1,17 +1,51 @@
 import { useEffect } from "react";
 import { View, Text, Image, ImageBackground, SafeAreaView } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { images } from "@/constants/images";
+import axios from "axios";
+import { apiEndpoints } from "@/constants/endPoints";
 
 export default function LoadingScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/(onboarding)/onboarding");
-    }, 2500);
+    const checkAuth = async () => {
+      const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
 
-    return () => clearTimeout(timer);
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+
+        if (!token) {
+          await delay(2500);
+          router.replace("/(onboarding)/onboarding");
+          return;
+        }
+
+        const response = await axios.get(apiEndpoints.getProfile, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          await delay(2500);
+          router.replace("/main" as any);
+        } else {
+          await AsyncStorage.removeItem("accessToken");
+          await delay(2500);
+          router.replace("/(onboarding)/onboarding");
+        }
+      } catch (error) {
+        console.log("Error checking token:", error);
+        await AsyncStorage.removeItem("accessToken");
+        await delay(2500);
+        router.replace("/(onboarding)/onboarding");
+      }
+    };
+
+    checkAuth();
   }, []);
 
   return (

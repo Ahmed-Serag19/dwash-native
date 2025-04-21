@@ -1,8 +1,10 @@
 import loadingBg from "../assets/images/loading-bg.png";
 import logo from "@/assets/images/light-logo.png";
+import darkLogo from "@/assets/images/dark-logo.png";
 import firstSlide from "@/assets/images/Screenshot 2025-04-09 185241.png";
 import secondSlide from "@/assets/images/Screenshot 2025-04-10 090416.png";
 import thirdSlide from "@/assets/images/Screenshot 2025-04-13 182801.png";
+import authBg from "@/assets/images/Rectangle 25.png";
 
 export const images = {
   loadingBg,
@@ -10,4 +12,6 @@ export const images = {
   firstSlide,
   secondSlide,
   thirdSlide,
+  authBg,
+  darkLogo,
 };
