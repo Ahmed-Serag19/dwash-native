@@ -11,8 +11,15 @@ import { apiEndpoints } from "@/constants/endPoints";
 import Toast from "react-native-toast-message";
 
 interface User {
-  id: string;
-  phoneNumber: string;
+  id: number;
+  username: string;
+  email: string;
+  mobile: string;
+  nameAr: string;
+  nameEn: string;
+  userType: string;
+  status: number;
+  agreementAccept: number;
 }
 
 interface UserContextType {
@@ -29,6 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const getUser = async () => {
+    setLoading(true);
     try {
       const token = await AsyncStorage.getItem("accessToken");
 
@@ -38,6 +46,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      console.log("Fetching user profile with token");
       const response = await axios.get(apiEndpoints.getProfile, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -45,13 +54,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (response.data.success) {
+        console.log(
+          "User profile fetched successfully:",
+          response.data.content
+        );
         setUser(response.data.content);
       } else {
+        console.log("Failed to fetch user profile:", response.data);
         await AsyncStorage.removeItem("accessToken");
         setUser(null);
       }
-    } catch (error) {
-      console.log("Error fetching user:", error);
+    } catch (error: any) {
+      console.log("Error fetching user:", error.response?.data || error);
       await AsyncStorage.removeItem("accessToken");
       setUser(null);
     } finally {

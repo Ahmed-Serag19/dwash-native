@@ -1,26 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
+  TextInput,
   TouchableOpacity,
+  Image,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions,
-  SafeAreaView,
   ImageBackground,
+  ActivityIndicator,
 } from "react-native";
+import { router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
-import { Link } from "expo-router";
-import { TextInput } from "react-native";
 import axios from "axios";
 import Toast from "react-native-toast-message";
-import { apiEndpoints } from "@/constants/endPoints";
-import OTPInput from "@/components/OTPInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiEndpoints } from "@/constants/endPoints";
 import { images } from "@/constants/images";
+import OTPInput from "@/components/OTPInput";
 
 type FormData = {
   phoneNumber: string;
@@ -30,17 +30,6 @@ export default function Login() {
   const [isOTP, setIsOTP] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
-  const [screenWidth, setScreenWidth] = useState(
-    Dimensions.get("window").width
-  );
-
-  // Add responsive handling for screen size changes
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener("change", ({ window }) => {
-      setScreenWidth(window.width);
-    });
-    return () => subscription?.remove();
-  }, []);
 
   const {
     control,
@@ -48,14 +37,14 @@ export default function Login() {
     formState: { errors },
   } = useForm<FormData>();
 
-  const phoneRegex = /^05\d{8}$/;
-
   const handlePhoneSubmit = async (data: FormData) => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem("accessToken");
+      // Format phone number to match API expectations (remove leading 0)
+      const formattedNumber = data.phoneNumber;
 
-      const apiUrl = apiEndpoints.LoginInitiate(data.phoneNumber, "AR");
+      const apiUrl = apiEndpoints.LoginInitiate(formattedNumber, "AR");
 
       const response = await axios.post(
         apiUrl,
@@ -72,7 +61,7 @@ export default function Login() {
           type: "success",
           text1: "تم إرسال رمز التحقق",
         });
-        setPhoneNumber(data.phoneNumber);
+        setPhoneNumber(formattedNumber);
         setIsOTP(true);
       } else {
         Toast.show({
@@ -91,54 +80,36 @@ export default function Login() {
     }
   };
 
+  const navigateToRegister = () => {
+    router.push("/(auth)/Register");
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        <ImageBackground source={images.authBg} style={styles.backgroundImage}>
-          <ScrollView
-            contentContainerStyle={[
-              styles.scrollContainer,
-              { paddingHorizontal: screenWidth < 380 ? 15 : 20 },
-            ]}
-          >
-            <View
-              style={[
-                styles.logoContainer,
-                { marginBottom: screenWidth < 380 ? 30 : 60 },
-              ]}
-            >
+        <ImageBackground
+          source={images.authBg}
+          style={styles.backgroundImage}
+          resizeMode="cover"
+        >
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.logoContainer}>
               <Image
                 source={images.darkLogo}
-                style={[styles.logo, { width: screenWidth < 380 ? 120 : 140 }]}
+                style={styles.logo}
                 resizeMode="contain"
               />
-              <Text
-                style={[
-                  styles.title,
-                  { fontSize: screenWidth < 380 ? 20 : 24 },
-                ]}
-              >
-                D. Wash
-              </Text>
+              <Text style={styles.title}>D. Wash</Text>
             </View>
+
             {!isOTP ? (
-              <View
-                style={[
-                  styles.formContainer,
-                  { width: screenWidth < 380 ? "95%" : "85%" },
-                ]}
-              >
+              <View style={styles.formContainer}>
                 <Text style={styles.inputLabel}>ادخل رقم الجوال</Text>
                 <View style={styles.phoneInputContainer}>
-                  <View
-                    style={[
-                      styles.flagContainer,
-                      { width: screenWidth < 380 ? 90 : 100 },
-                    ]}
-                  >
+                  <View style={styles.flagContainer}>
                     <Image
                       source={require("@/assets/images/saudi-flag.png")}
                       style={styles.flag}
@@ -151,7 +122,7 @@ export default function Login() {
                     rules={{
                       required: "رقم الهاتف مطلوب",
                       pattern: {
-                        value: phoneRegex,
+                        value: /^05\d{8}$/,
                         message:
                           "رقم الهاتف غير صالح، يجب أن يبدأ بـ 05 ويتكون من 10 أرقام",
                       },
@@ -177,31 +148,22 @@ export default function Login() {
                 )}
 
                 <TouchableOpacity
-                  style={[
-                    styles.button,
-                    loading && styles.buttonDisabled,
-                    { height: screenWidth < 380 ? 45 : 50 },
-                  ]}
+                  style={[styles.button, loading && styles.buttonDisabled]}
                   onPress={handleSubmit(handlePhoneSubmit)}
                   disabled={loading}
                 >
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      { fontSize: screenWidth < 380 ? 16 : 18 },
-                    ]}
-                  >
-                    {loading ? "جاري التحميل..." : "تسجيل الدخول"}
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>تسجيل الدخول</Text>
+                  )}
                 </TouchableOpacity>
 
                 <View style={styles.linkContainer}>
-                  <Link href="/(auth)/Register" asChild>
-                    <TouchableOpacity>
-                      <Text style={styles.link}>تسجيل جديد</Text>
-                    </TouchableOpacity>
-                  </Link>
-                  <Text style={styles.linkText}> لا تملك حساب؟</Text>
+                  <TouchableOpacity onPress={navigateToRegister}>
+                    <Text style={styles.link}>تسجيل جديد</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.linkText}>لا تملك حساب؟</Text>
                 </View>
               </View>
             ) : (
@@ -294,7 +256,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    width: "95%",
+    width: "100%",
     height: 50,
     backgroundColor: "#0A3981",
     borderRadius: 8,
@@ -330,9 +292,5 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
     justifyContent: "center",
     height: "45%",
-    // position: "absolute",
-    // left: 0,
-    // top: 0,
-    // right: 0,
   },
 });
