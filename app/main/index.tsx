@@ -1,6 +1,10 @@
 import { Redirect } from "expo-router";
+import Toast from "react-native-toast-message";
 
 export default function Index() {
-  // Redirect to the home tab
-  return <Redirect href="/main/home" />;
+  return (
+    <>
+      <Redirect href="/main/home" />
+    </>
+  );
 }

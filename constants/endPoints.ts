@@ -10,6 +10,8 @@ export const apiEndpoints = {
     `${baseUrl}/auth/signUp/finalize?confirmationCode=${confirmationCode}&number=${number}`,
   getFreelancers: (size: number) =>
     `${baseUrl}/public/getFreelancers?page=0&size=${size}&type=1`,
+  getServicesByBrandId: (brandId: number) =>
+    `${baseUrl}/public/getServices?brandId=${brandId}&serviceTypeId=1`,
   getServices: `${baseUrl}/public/getServices`,
   getProfile: `${baseUrl}/consumer/getProfile`,
   editProfile: `${baseUrl}/consumer/editProfile`,
@@ -29,7 +31,7 @@ export const apiEndpoints = {
   cancelOrder: (id: number) =>
     `${baseUrl}/consumer/cancelOrder?requestId=${id}`,
   addReview: (id: number) => `${baseUrl}/consumer/addReview?requestId=${id}`,
-
+  getAdvertisements: `${baseUrl}/public/getAdvertisements`,
   //Address Management
   getAddresses: `${baseUrl}/consumer/allAddresses`,
   addAddress: `${baseUrl}/consumer/addAddress`,
@@ -48,6 +50,5 @@ export const apiEndpoints = {
   getCarBrands: `${baseUrl}/public/carBrand`,
   getCarModels: (brandId: number) =>
     `${baseUrl}/public/carModel?brandId=${brandId}`,
-
   getCarColor: `${baseUrl}/public/getCarColor`,
 };

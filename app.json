@@ -24,6 +24,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(Dwash) to use your location."
+        }
+      ],
       [
         "expo-splash-screen",
         {

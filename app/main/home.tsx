@@ -1,12 +1,29 @@
 import { useState, useEffect } from "react";
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  Image,
+  SafeAreaView,
+  StatusBar,
+} from "react-native";
 import { useUser } from "@/context/UserContext";
 import { router } from "expo-router";
+import { Search, MapPin } from "lucide-react-native";
+import { FreelancersProvider } from "@/context/FreelancerContext";
+import AdvertisementCarousel from "@/components/home/AdvertisementCarousel";
+import ServiceProvidersList from "@/components/home/ServiceProviderList";
+import IncompleteProfileModal from "@/components/home/IncompleteProfileModal";
+import { images } from "@/constants/images";
 
-export default function HomeScreen() {
+function HomeContent() {
   const { user } = useUser();
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
+  // Check if user profile is incomplete
   useEffect(() => {
     if (user) {
       const isIncomplete =
@@ -20,59 +37,135 @@ export default function HomeScreen() {
     router.push("/main/profile");
   };
 
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>الرئيسية</Text>
+  const navigateToServiceProvider = (brandId: number) => {
+    router.push({
+      pathname: "/main/service-provider/[id]",
+      params: { id: brandId.toString() },
+    });
+  };
 
-      <Modal
-        visible={showIncompleteModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {}}
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
+
+      <View style={styles.header}>
+        <Image source={images.logo} style={styles.logo} resizeMode="contain" />
+        <MapPin size={24} color="#0A3981" />
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="بحث"
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          textAlign="right"
+        />
+        <Search size={20} color="#999" style={styles.searchIcon} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalText}>فضلاً حدث الملف الشخصي</Text>
-            <TouchableOpacity style={styles.button} onPress={goToProfile}>
-              <Text style={styles.buttonText}>الملف الشخصي</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Advertisements Carousel */}
+        <View style={styles.carouselContainer}>
+          <AdvertisementCarousel />
         </View>
-      </Modal>
-    </View>
+
+        {/* Service Providers Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>مزودي الخدمة</Text>
+          <ServiceProvidersList
+            searchQuery={searchQuery}
+            onSelectProvider={navigateToServiceProvider}
+          />
+        </View>
+      </ScrollView>
+
+      {/* Incomplete Profile Modal */}
+      <IncompleteProfileModal
+        visible={showIncompleteModal}
+        onPress={goToProfile}
+      />
+    </SafeAreaView>
+  );
+}
+
+export default function Home() {
+  return (
+    <FreelancersProvider>
+      <HomeContent />
+    </FreelancersProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#f5f5f5",
   },
-  modalContainer: {
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: StatusBar.currentHeight || 40,
+    paddingBottom: 10,
+    backgroundColor: "#0F0D23",
+  },
+  logo: {
+    width: 80,
+    height: 40,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "white",
-    padding: 24,
-    borderRadius: 12,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 20,
-    color: "#333",
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "#0A3981", // primary
-    paddingVertical: 10,
-    paddingHorizontal: 24,
     borderRadius: 8,
+    marginHorizontal: 16,
+    marginVertical: 10,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
+  searchInput: {
+    flex: 1,
+    height: "100%",
     fontSize: 16,
+    color: "#333",
+  },
+  searchIcon: {
+    marginLeft: 8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  carouselContainer: {
+    marginVertical: 16,
+    marginHorizontal: 16,
+    height: 180,
+  },
+  sectionContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#0A3981",
+    marginBottom: 16,
+    textAlign: "center",
   },
 });

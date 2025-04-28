@@ -71,7 +71,6 @@ const OTPInput: React.FC<OTPInputProps> = ({
 
     setUpdatingProfile(true);
     try {
-      console.log("Updating profile with:", userData);
       const response = await axios.put(
         apiEndpoints.editProfile,
         {
@@ -86,12 +85,9 @@ const OTPInput: React.FC<OTPInputProps> = ({
       );
 
       if (response.data.success) {
-        console.log("Profile updated successfully:", response.data);
         // Wait a moment before fetching updated user data
         await new Promise((resolve) => setTimeout(resolve, 500));
         await getUser(); // Refresh user data after profile update
-      } else {
-        console.log("Failed to update profile:", response.data);
       }
     } catch (error: any) {
       console.error("Error updating profile:", error.response?.data || error);
@@ -171,7 +167,6 @@ const OTPInput: React.FC<OTPInputProps> = ({
         });
       }
     } catch (error: any) {
-      console.log(error);
       if (
         error.response?.data?.messageAr === "Confirmation code doesn't match"
       ) {

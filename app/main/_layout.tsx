@@ -6,59 +6,73 @@ import {
   User,
   ShoppingCart,
 } from "lucide-react-native";
+import { View, StyleSheet, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomTabBar from "@/components/CustomTabBar";
 
 export default function MainLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-      }}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "الرئيسية",
-          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+    <View style={styles.container}>
+      {/* Only add padding for the status bar height on Android */}
+      <View style={{ height: Platform.OS === "android" ? insets.top : 0 }} />
+
+      <Tabs
+        screenOptions={{
+          headerShown: false,
         }}
-      />
-      <Tabs.Screen
-        name="orders"
-        options={{
-          title: "طلباتي",
-          tabBarIcon: ({ color }) => <CalendarDays size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="wallet"
-        options={{
-          title: "المحفظة",
-          tabBarIcon: ({ color }) => <Wallet size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "الملف الشخصي",
-          tabBarIcon: ({ color }) => <User size={24} color={color} />,
-          href: null, // This hides it from the tab bar but keeps it in navigation
-        }}
-      />
-      <Tabs.Screen
-        name="cart"
-        options={{
-          title: "سلة التسوق",
-          tabBarIcon: ({ color }) => <ShoppingCart size={24} color={color} />,
-          href: null, // This hides it from the tab bar but keeps it in navigation
-        }}
-      />
-      <Tabs.Screen
-        name="index"
-        options={{
-          href: null, // Hide this from the tab bar
-        }}
-      />
-    </Tabs>
+        tabBar={(props) => <CustomTabBar {...props} />}
+      >
+        <Tabs.Screen
+          name="home"
+          options={{
+            title: "الرئيسية",
+            tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="orders"
+          options={{
+            title: "طلباتي",
+            tabBarIcon: ({ color }) => <CalendarDays size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="wallet"
+          options={{
+            title: "المحفظة",
+            tabBarIcon: ({ color }) => <Wallet size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "الملف الشخصي",
+            tabBarIcon: ({ color }) => <User size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="cart"
+          options={{
+            title: "سلة التسوق",
+            tabBarIcon: ({ color }) => <ShoppingCart size={24} color={color} />,
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

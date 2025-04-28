@@ -70,7 +70,6 @@ export default function Login() {
         });
       }
     } catch (error: any) {
-      console.log(error);
       Toast.show({
         type: "error",
         text1: error.response?.data?.messageAr || "حدث خطأ أثناء تسجيل الدخول",
