@@ -1,7 +1,9 @@
+import type React from "react";
+
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { apiEndpoints } from "@/constants/endPoints";
-import { User, Car, UserAddress } from "@/interfaces/interfaces";
+import type { User, Car, UserAddress } from "@/interfaces/interfaces";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 
@@ -22,8 +24,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [cars, setCars] = useState<Car[]>([]);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [loading, setLoading] = useState(true); // Initially loading is true
-  const [token, setToken] = useState<string | null>(null); // Global token state
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [dataFetchInProgress, setDataFetchInProgress] = useState(false);
 
   // Function to retrieve token from AsyncStorage
   const retrieveToken = async () => {
@@ -34,11 +37,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getUser = async () => {
     try {
-      setLoading(true); // Set loading before fetching data
       const storedToken = await retrieveToken();
       if (!storedToken) {
         setUser(null);
-        setLoading(false); // Stop loading if no token found
         return;
       }
 
@@ -55,23 +56,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Error fetching user profile:", error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        // Handle 401 Unauthorized error gracefully
         setUser(null);
       }
-      await AsyncStorage.removeItem("accessToken");
-      setUser(null);
-    } finally {
-      setLoading(false); // Ensure loading is turned off once data fetching is done
     }
   };
 
   const getCars = async () => {
     try {
-      setLoading(true); // Start loading before fetching
       const storedToken = await retrieveToken();
       if (!storedToken) {
         setCars([]);
-        setLoading(false);
         return;
       }
 
@@ -83,24 +77,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setCars(response.data.content || []);
       } else {
         console.error("Error fetching cars:", response.data.messageEn);
+        setCars([]);
       }
     } catch (error) {
       console.error("Error fetching cars:", error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        setCars([]);
-      }
-    } finally {
-      setLoading(false); // End loading once cars are fetched
+      setCars([]);
     }
   };
 
   const getAddresses = async () => {
     try {
-      setLoading(true); // Start loading before fetching
       const storedToken = await retrieveToken();
       if (!storedToken) {
         setAddresses([]);
-        setLoading(false);
         return;
       }
 
@@ -112,14 +101,87 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setAddresses(response.data.content || []);
       } else {
         console.error("Error fetching addresses:", response.data.messageEn);
+        setAddresses([]);
       }
     } catch (error) {
       console.error("Error fetching addresses:", error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      setAddresses([]);
+    }
+  };
+
+  const fetchAllData = async () => {
+    if (dataFetchInProgress) return;
+
+    setDataFetchInProgress(true);
+    setLoading(true);
+
+    try {
+      const storedToken = await retrieveToken();
+      if (!storedToken) {
+        setUser(null);
+        setCars([]);
         setAddresses([]);
+        setLoading(false);
+        setDataFetchInProgress(false);
+        return;
       }
+
+      // Create all API requests but don't wait for them yet
+      const userPromise = axios
+        .get(apiEndpoints.getProfile, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+        .catch((error) => {
+          console.error("Error fetching user profile:", error);
+          return { data: { success: false } };
+        });
+
+      const carsPromise = axios
+        .get(apiEndpoints.getAllCars, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+        .catch((error) => {
+          console.error("Error fetching cars:", error);
+          return { data: { success: false, content: [] } };
+        });
+
+      const addressesPromise = axios
+        .get(apiEndpoints.getAddresses, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+        .catch((error) => {
+          console.error("Error fetching addresses:", error);
+          return { data: { success: false, content: [] } };
+        });
+
+      // Execute all requests in parallel
+      const [userResponse, carsResponse, addressesResponse] = await Promise.all(
+        [userPromise, carsPromise, addressesPromise]
+      );
+
+      // Process responses
+      if (userResponse.data.success) {
+        setUser(userResponse.data.content);
+      } else {
+        setUser(null);
+      }
+
+      setCars(carsResponse.data.success ? carsResponse.data.content || [] : []);
+      setAddresses(
+        addressesResponse.data.success
+          ? addressesResponse.data.content || []
+          : []
+      );
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      // Set default values on error
+      setUser(null);
+      setCars([]);
+      setAddresses([]);
     } finally {
-      setLoading(false); // End loading once addresses are fetched
+      // Always end loading state and mark data fetch as complete
+      setLoading(false);
+      setDataFetchInProgress(false);
     }
   };
 
@@ -143,14 +205,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const initialize = async () => {
       const storedToken = await retrieveToken();
       if (storedToken) {
-        await Promise.all([getUser(), getCars(), getAddresses()]); // Fetch all data simultaneously
+        fetchAllData();
       } else {
         setLoading(false);
       }
     };
 
     initialize();
-  }, [token]); // Dependencies array ensures this only runs when the token is set
+  }, [token]);
 
   return (
     <UserContext.Provider

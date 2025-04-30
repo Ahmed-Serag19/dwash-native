@@ -59,6 +59,7 @@ export default function ServiceProvidersList({
       </View>
     );
   }
+
   return (
     <View>
       {filteredFreelancers.map((freelancer: Freelancer) => (

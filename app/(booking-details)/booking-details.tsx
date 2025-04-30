@@ -21,9 +21,7 @@ import AddressSelector from "@/components/booking/AddressSelector";
 import TimeSlotSelector from "@/components/booking/TimeSlotSelector";
 import DiscountInput from "@/components/booking/DiscountInput";
 
-// Base URL for images
 const baseImageUrl = "https://api.stg.2025.dwash.cood2.dussur.sa";
-// Default placeholder image for service providers
 const defaultServiceProviderImage = require("@/assets/images/service-providers.jpg");
 
 export default function BookingDetailsScreen() {
@@ -356,7 +354,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    marginBottom: 20,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // backgroundColor: "white",
+    backgroundColor: "white",
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",

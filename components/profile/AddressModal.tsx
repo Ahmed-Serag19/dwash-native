@@ -202,7 +202,7 @@ export default function AddressModal({
                         {cities.map((city) => (
                           <Picker.Item
                             key={city.cityId}
-                            label={city.cityNameAr} // Changed from cityAr to cityNameAr
+                            label={city.cityNameAr}
                             value={city.cityId}
                           />
                         ))}

@@ -11,11 +11,10 @@ import axios from "axios";
 import Toast from "react-native-toast-message";
 import { apiEndpoints } from "@/constants/endPoints";
 import AddressCard from "./AddressCard";
-import AddressModal from "./AddressModal";
+import AddressModal from "./address/AddressModal";
 import ConfirmationModal from "./ConfirmationModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Plus } from "lucide-react-native";
-import { useUser } from "@/context/UserContext";
 
 const { width } = Dimensions.get("window");
 const isSmallScreen = width < 360;
@@ -34,7 +33,7 @@ export default function AddressManagement({
   const [addressToDelete, setAddressToDelete] = useState<any | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { getAddresses } = useUser();
+
   const handleAddAddress = async (data: any) => {
     setLoading(true);
     try {
@@ -60,7 +59,6 @@ export default function AddressManagement({
         });
         setIsAddModalOpen(false);
         onSuccess();
-        getAddresses();
       } else {
         Toast.show({
           type: "error",
@@ -107,7 +105,6 @@ export default function AddressManagement({
         });
         setEditingAddress(null);
         onSuccess();
-        getAddresses();
       } else {
         Toast.show({
           type: "error",
@@ -153,7 +150,6 @@ export default function AddressManagement({
           type: "success",
           text1: "تم حذف العنوان بنجاح",
         });
-        getAddresses();
         setAddressToDelete(null);
         setIsConfirmModalOpen(false);
         onSuccess();

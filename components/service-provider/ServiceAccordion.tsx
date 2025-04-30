@@ -125,8 +125,8 @@ export default function ServiceAccordion({
 
           <View style={styles.footer}>
             <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>المجموع:</Text>
               <Text style={styles.totalPrice}>{calculateTotalPrice()} ر.س</Text>
+              <Text style={styles.totalLabel}>المجموع: </Text>
             </View>
 
             <TouchableOpacity

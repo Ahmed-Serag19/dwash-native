@@ -17,21 +17,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Plus } from "lucide-react-native";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { useUser } from "@/context/UserContext";
+import { Car } from "@/interfaces/interfaces";
 
 const { width } = Dimensions.get("window");
 const isSmallScreen = width < 360;
 
 interface CarManagementProps {
   onSuccess: () => void;
+  cars: Car[];
 }
 
-export default function CarManagement({ onSuccess }: CarManagementProps) {
+export default function CarManagement({ onSuccess, cars }: CarManagementProps) {
   const [isAddFormVisible, setIsAddFormVisible] = useState(false);
   const [carToDelete, setCarToDelete] = useState<any | null>(null);
   const [carToEdit, setCarToEdit] = useState<any | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const { cars, getCars, loading } = useUser();
+  const { getCars, loading } = useUser();
 
   const handleAddCar = async (data: any) => {
     setActionLoading(true);

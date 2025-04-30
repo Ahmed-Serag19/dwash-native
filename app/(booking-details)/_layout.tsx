@@ -4,7 +4,7 @@ import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native";
 
-export default function AuthLayout() {
+export default function BookingDetailsLayout() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <UserProvider>
@@ -15,8 +15,7 @@ export default function AuthLayout() {
             animationDuration: 200,
           }}
         >
-          <Stack.Screen name="Login" />
-          <Stack.Screen name="Register" />
+          <Stack.Screen name="booking-details" />
         </Stack>
         <Toast />
       </UserProvider>

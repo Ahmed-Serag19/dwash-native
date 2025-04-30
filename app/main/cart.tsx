@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: StatusBar.currentHeight || 40,
     paddingBottom: 10,
-    backgroundColor: "#fff",
+    // backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },

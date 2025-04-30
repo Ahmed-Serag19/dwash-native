@@ -1,3 +1,5 @@
+"use client";
+
 import type React from "react";
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
@@ -8,6 +10,7 @@ import {
   CalendarDays,
   Wallet,
   MoreHorizontal,
+  User,
 } from "lucide-react-native";
 import MoreMenuModal from "./MoreMenuModal";
 
@@ -21,7 +24,7 @@ export default function CustomTabBar({ state, navigation }: any) {
   const { logout } = useUser();
 
   // Only show these tabs in the tab bar
-  const visibleTabs = ["home", "orders", "wallet", "more"];
+  const visibleTabs = ["home", "orders", "wallet", "profile", "more"];
 
   const onPressHandler = (route: RouteType, index: number) => {
     if (route.name === "more") {
@@ -75,6 +78,16 @@ export default function CustomTabBar({ state, navigation }: any) {
           }
           label="المحفظة"
         />
+
+        {/* Profile Tab
+        <TabButton
+          isFocused={state.index === 3}
+          onPress={() => onPressHandler({ key: "profile", name: "profile" }, 3)}
+          icon={
+            <User size={24} color={state.index === 3 ? "#0A3981" : "black"} />
+          }
+          label="الملف الشخصي"
+        /> */}
 
         {/* More Tab */}
         <TabButton

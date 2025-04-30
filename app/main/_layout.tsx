@@ -15,7 +15,6 @@ export default function MainLayout() {
 
   return (
     <View style={styles.container}>
-      {/* Only add padding for the status bar height on Android */}
       <View style={{ height: Platform.OS === "android" ? insets.top : 0 }} />
 
       <Tabs

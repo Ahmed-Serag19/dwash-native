@@ -126,7 +126,6 @@ const OTPInput: React.FC<OTPInputProps> = ({
           if (isRegister && userData) {
             await updateUserProfile(token);
           } else {
-            // For login, just get the user data
             await getUser();
           }
 
@@ -135,7 +134,6 @@ const OTPInput: React.FC<OTPInputProps> = ({
             text1: isRegister ? "تم التسجيل بنجاح" : "تم تسجيل الدخول بنجاح",
           });
 
-          // Navigate after everything is done
           setTimeout(() => {
             router.replace("/main" as any);
           }, 1000);

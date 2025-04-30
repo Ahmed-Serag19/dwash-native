@@ -51,11 +51,9 @@ export default function AddressCard({
           if (location.city) addressParts.push(location.city);
           if (location.region) addressParts.push(location.region);
 
-          // If we have address components, join them
           if (addressParts.length > 0) {
             setFormattedAddress(addressParts.join("، "));
           } else {
-            // Fallback to showing district and city from our data
             const parts = [];
             if (address.districtNameAr || address.districtAr)
               parts.push(address.districtNameAr || address.districtAr);
@@ -64,7 +62,6 @@ export default function AddressCard({
             setFormattedAddress(parts.join("، "));
           }
         } else {
-          // Fallback to showing district and city from our data
           const parts = [];
           if (address.districtNameAr || address.districtAr)
             parts.push(address.districtNameAr || address.districtAr);
@@ -74,7 +71,6 @@ export default function AddressCard({
         }
       } catch (error) {
         console.error("Error getting address:", error);
-        // Fallback to showing district and city from our data
         const parts = [];
         if (address.districtNameAr || address.districtAr)
           parts.push(address.districtNameAr || address.districtAr);

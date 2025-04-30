@@ -12,6 +12,7 @@ import { apiEndpoints } from "@/constants/endPoints";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
+import { useUser } from "@/context/UserContext";
 
 interface AddressSelectorProps {
   selectedAddressId: number | null;
@@ -22,45 +23,45 @@ export default function AddressSelector({
   selectedAddressId,
   onSelectAddress,
 }: AddressSelectorProps) {
-  const [addresses, setAddresses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [addresses, setAddresses] = useState<any[]>([]);
+  // const [loading, setLoading] = useState(true);
+  const { addresses, loading } = useUser();
+  // useEffect(() => {
+  //   fetchAddresses();
+  // }, []);
 
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
+  // const fetchAddresses = async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem("accessToken");
+  //     if (!token) {
+  //       Toast.show({
+  //         type: "error",
+  //         text1: "يجب تسجيل الدخول أولاً",
+  //       });
+  //       return;
+  //     }
 
-  const fetchAddresses = async () => {
-    try {
-      const token = await AsyncStorage.getItem("accessToken");
-      if (!token) {
-        Toast.show({
-          type: "error",
-          text1: "يجب تسجيل الدخول أولاً",
-        });
-        return;
-      }
+  //     const response = await axios.get(apiEndpoints.getAddresses, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
 
-      const response = await axios.get(apiEndpoints.getAddresses, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data.success) {
-        setAddresses(response.data.content || []);
-        // Auto-select first address if none selected
-        if (response.data.content?.length > 0 && !selectedAddressId) {
-          onSelectAddress(response.data.content[0].userAddressId);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-      Toast.show({
-        type: "error",
-        text1: "حدث خطأ أثناء تحميل العناوين",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (response.data.success) {
+  //       setAddresses(response.data.content || []);
+  //       // Auto-select first address if none selected
+  //       if (response.data.content?.length > 0 && !selectedAddressId) {
+  //         onSelectAddress(response.data.content[0].userAddressId);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching addresses:", error);
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "حدث خطأ أثناء تحميل العناوين",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const navigateToAddAddress = () => {
     router.push("/main/profile");
@@ -108,8 +109,7 @@ export default function AddressSelector({
                     {address.addressTitle}
                   </Text>
                   <Text style={styles.addressText}>
-                    {address.cityNameAr || address.cityAr},{" "}
-                    {address.districtNameAr || address.districtAr}
+                    {address.cityAr}, {address.districtAr}
                   </Text>
                 </View>
               </View>

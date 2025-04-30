@@ -6,6 +6,7 @@ import secondSlide from "@/assets/images/Screenshot 2025-04-10 090416.png";
 import thirdSlide from "@/assets/images/Screenshot 2025-04-13 182801.png";
 import authBg from "@/assets/images/Rectangle 25.png";
 import headerBg from "@/assets/images/Rectangle 554.png";
+import homeHeader from "@/assets/images/home-header.png";
 
 export const images = {
   loadingBg,
@@ -16,4 +17,5 @@ export const images = {
   authBg,
   darkLogo,
   headerBg,
+  homeHeader,
 };

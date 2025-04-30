@@ -57,7 +57,7 @@ export const FreelancersProvider: React.FC<FreelancersProviderProps> = ({
   };
 
   const increaseSize = () => {
-    setSize((prev) => prev + 8); // Increase size by 8
+    setSize((prev) => prev + 8);
   };
 
   useEffect(() => {

@@ -8,11 +8,15 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+  ImageBackground,
 } from "react-native";
 import { useUser } from "@/context/UserContext";
 import { router } from "expo-router";
 import { Search, MapPin } from "lucide-react-native";
-import { FreelancersProvider } from "@/context/FreelancerContext";
+import {
+  FreelancersProvider,
+  useFreelancers,
+} from "@/context/FreelancerContext";
 import AdvertisementCarousel from "@/components/home/AdvertisementCarousel";
 import ServiceProvidersList from "@/components/home/ServiceProviderList";
 import IncompleteProfileModal from "@/components/home/IncompleteProfileModal";
@@ -22,8 +26,7 @@ function HomeContent() {
   const { user } = useUser();
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Check if user profile is incomplete
+  const { fetchFreelancers } = useFreelancers();
   useEffect(() => {
     if (user) {
       const isIncomplete =
@@ -44,6 +47,9 @@ function HomeContent() {
     });
   };
 
+  useEffect(() => {
+    fetchFreelancers(8);
+  }, []);
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
@@ -52,22 +58,32 @@ function HomeContent() {
         translucent={true}
       />
 
-      <View style={styles.header}>
-        <Image source={images.logo} style={styles.logo} resizeMode="contain" />
-        <MapPin size={24} color="#0A3981" />
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="بحث"
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          textAlign="right"
-        />
-        <Search size={20} color="#999" style={styles.searchIcon} />
+      <View>
+        <ImageBackground
+          source={images.homeHeader}
+          style={{ width: "100%", height: 160, borderRadius: 30 }}
+          resizeMode="cover"
+        >
+          <View style={styles.header}>
+            <Image
+              source={images.logo}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <MapPin size={24} color="#fff" />
+          </View>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="بحث"
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              textAlign="right"
+            />
+            <Search size={20} color="#999" style={styles.searchIcon} />
+          </View>
+        </ImageBackground>
       </View>
 
       <ScrollView
@@ -116,10 +132,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     paddingTop: StatusBar.currentHeight || 40,
     paddingBottom: 10,
-    backgroundColor: "#0F0D23",
+    // borderRadius: 50,
+    // backgroundColor: "#0F0D23",
   },
   logo: {
     width: 80,
@@ -133,7 +150,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 10,
     paddingHorizontal: 12,
-    height: 44,
+    height: 40,
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },

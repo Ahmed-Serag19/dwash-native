@@ -29,7 +29,7 @@ export default function CartItemAccordion({
 
   const handleBookNow = () => {
     router.push({
-      pathname: "/main/booking-details",
+      pathname: "/booking-details",
       params: { invoiceId: item.invoiceId, brandId: item.brandId },
     });
   };
