@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -24,27 +24,8 @@ const { width } = Dimensions.get("window");
 const isSmallScreen = width < 360;
 
 export default function ProfileScreen() {
-  const { user, cars, addresses, loading, getUser, getCars, getAddresses } =
-    useUser();
+  const { user, cars, addresses, getUser, getCars, getAddresses } = useUser();
   const [refreshing, setRefreshing] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
-
-  // Set a timeout to prevent infinite loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoadingTimeout(true);
-    }, 5000); // 5 seconds timeout
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Mark initial load as complete when loading state changes to false
-  useEffect(() => {
-    if (!loading) {
-      setInitialLoadComplete(true);
-    }
-  }, [loading]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -61,9 +42,8 @@ export default function ProfileScreen() {
     }
   };
 
-  // Show loading indicator only during initial load and before timeout
-  if (loading && !initialLoadComplete && !loadingTimeout) {
-    return <LoadingIndicator message="جاري تحميل البيانات..." />;
+  if (!user) {
+    return <LoadingIndicator message="جاري تحميل الملف الشخصي..." />;
   }
 
   return (
@@ -90,25 +70,22 @@ export default function ProfileScreen() {
           </ImageBackground>
         </View>
 
-        {/* Personal Information Form */}
+        {/* Personal Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>المعلومات الشخصية</Text>
           <PersonalInfoForm user={user} onSuccess={getUser} />
         </View>
 
-        {/* Address Management */}
+        {/* Addresses */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>المواقع المحفوظة</Text>
-          <AddressManagement
-            addresses={addresses || []}
-            onSuccess={getAddresses}
-          />
+          <AddressManagement addresses={addresses} onSuccess={getAddresses} />
         </View>
 
-        {/* Car Management */}
+        {/* Cars */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>سياراتي</Text>
-          <CarManagement cars={cars || []} onSuccess={getCars} />
+          <CarManagement cars={cars} onSuccess={getCars} />
         </View>
       </ScrollView>
     </SafeAreaView>

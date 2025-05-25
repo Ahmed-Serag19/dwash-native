@@ -34,7 +34,7 @@ const OTPInput: React.FC<OTPInputProps> = ({
   const [loading, setLoading] = useState(false);
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-  const { getUser } = useUser();
+  const { getUser, user } = useUser();
 
   useEffect(() => {
     setTimeout(() => {
@@ -96,6 +96,92 @@ const OTPInput: React.FC<OTPInputProps> = ({
     }
   };
 
+  // const handleOTPSubmit = async () => {
+  //   const confirmationCode = otp.join("");
+
+  //   if (confirmationCode.length !== 6) {
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "الرجاء إدخال رمز التحقق المكون من 6 أرقام",
+  //     });
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   Keyboard.dismiss();
+
+  //   try {
+  //     const apiUrl = isRegister
+  //       ? apiEndpoints.RegisterFinalize(confirmationCode, phoneNumber)
+  //       : apiEndpoints.LoginFinalize(confirmationCode, phoneNumber);
+
+  //     const response = await axios.post(apiUrl, {});
+
+  //     if (response.data.success) {
+  //       const token = response.data.content?.token;
+
+  //       if (token) {
+  //         await AsyncStorage.setItem("accessToken", token);
+
+  //         if (isRegister && userData) {
+  //           await updateUserProfile(token);
+  //         } else {
+  //           await getUser();
+  //         }
+
+  //         Toast.show({
+  //           type: "success",
+  //           text1: isRegister ? "تم التسجيل بنجاح" : "تم تسجيل الدخول بنجاح",
+  //         });
+
+  //         setTimeout(() => {
+  //           router.replace("/main" as any);
+  //         }, 1000);
+  //       } else if (
+  //         response.data.messageAr === "Confirmation code doesn't match"
+  //       ) {
+  //         Toast.show({
+  //           type: "error",
+  //           text1: "رمز التحقق غير صحيح",
+  //         });
+  //       } else {
+  //         Toast.show({
+  //           type: "error",
+  //           text1: "لم يتم العثور على رمز الوصول",
+  //         });
+  //       }
+  //     } else if (
+  //       response.data.messageAr === "Confirmation code has been expired"
+  //     ) {
+  //       Toast.show({
+  //         type: "error",
+  //         text1: "انتهت صلاحية رمز التحقق",
+  //       });
+  //       router.replace("/(auth)/Login");
+  //     } else {
+  //       Toast.show({
+  //         type: "error",
+  //         text1: response.data.messageAr || "حدث خطأ أثناء التحقق",
+  //       });
+  //     }
+  //   } catch (error: any) {
+  //     if (
+  //       error.response?.data?.messageAr === "Confirmation code doesn't match"
+  //     ) {
+  //       Toast.show({
+  //         type: "error",
+  //         text1: "رمز التحقق غير صحيح",
+  //       });
+  //       return;
+  //     }
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "حدث خطأ أثناء التحقق",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleOTPSubmit = async () => {
     const confirmationCode = otp.join("");
 
@@ -126,23 +212,12 @@ const OTPInput: React.FC<OTPInputProps> = ({
           if (isRegister && userData) {
             await updateUserProfile(token);
           } else {
-            await getUser();
+            await getUser(); // This will trigger useEffect when user is ready
           }
 
           Toast.show({
             type: "success",
             text1: isRegister ? "تم التسجيل بنجاح" : "تم تسجيل الدخول بنجاح",
-          });
-
-          setTimeout(() => {
-            router.replace("/main" as any);
-          }, 1000);
-        } else if (
-          response.data.messageAr === "Confirmation code doesn't match"
-        ) {
-          Toast.show({
-            type: "error",
-            text1: "رمز التحقق غير صحيح",
           });
         } else {
           Toast.show({
@@ -182,7 +257,11 @@ const OTPInput: React.FC<OTPInputProps> = ({
       setLoading(false);
     }
   };
-
+  useEffect(() => {
+    if (user) {
+      router.replace("/main");
+    }
+  }, [user]);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>رمز التحقق</Text>

@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +6,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MapPin, Plus } from "lucide-react-native";
-import axios from "axios";
-import { apiEndpoints } from "@/constants/endPoints";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import Toast from "react-native-toast-message";
 import { useUser } from "@/context/UserContext";
 
 interface AddressSelectorProps {
@@ -23,45 +18,7 @@ export default function AddressSelector({
   selectedAddressId,
   onSelectAddress,
 }: AddressSelectorProps) {
-  // const [addresses, setAddresses] = useState<any[]>([]);
-  // const [loading, setLoading] = useState(true);
   const { addresses, loading } = useUser();
-  // useEffect(() => {
-  //   fetchAddresses();
-  // }, []);
-
-  // const fetchAddresses = async () => {
-  //   try {
-  //     const token = await AsyncStorage.getItem("accessToken");
-  //     if (!token) {
-  //       Toast.show({
-  //         type: "error",
-  //         text1: "يجب تسجيل الدخول أولاً",
-  //       });
-  //       return;
-  //     }
-
-  //     const response = await axios.get(apiEndpoints.getAddresses, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-
-  //     if (response.data.success) {
-  //       setAddresses(response.data.content || []);
-  //       // Auto-select first address if none selected
-  //       if (response.data.content?.length > 0 && !selectedAddressId) {
-  //         onSelectAddress(response.data.content[0].userAddressId);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching addresses:", error);
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "حدث خطأ أثناء تحميل العناوين",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const navigateToAddAddress = () => {
     router.push("/main/profile");

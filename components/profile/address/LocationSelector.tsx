@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   View,
@@ -43,7 +41,7 @@ export default function LocationSelector({
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        alert("لم يتم منح إذن الوصول إلى الموقع");
+        alert("لم يتم منح إذن الوصول إلى الموقع. يرجى تفعيله من الإعدادات.");
         setLocationLoading(false);
         return;
       }

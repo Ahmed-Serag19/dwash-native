@@ -196,3 +196,31 @@ export interface AdvertisementImage {
   imageId: number;
   imagePath: string;
 }
+export interface OrderData {
+  invoiceId: number;
+  brandNameAr: string;
+  brandNameEn: string;
+  userPhoneNumber: string | null;
+  fromTime: string | null;
+  timeTo: string | null;
+  statusName: string;
+  reviewed: boolean;
+  reservationDate: string;
+  itemDto: {
+    itemNameAr: string;
+    itemNameEn: string;
+    serviceTypeAr: string;
+    serviceTypeEn: string;
+    itemPrice: number;
+    itemExtraDtos: Array<{
+      itemExtraNameAr: string;
+      itemExtraNameEn: string;
+      itemExtraPrice: number;
+    }>;
+  };
+  totalAmount: number;
+  request: {
+    id: number;
+    statusName: string;
+  };
+}
