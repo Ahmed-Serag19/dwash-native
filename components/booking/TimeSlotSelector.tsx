@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,20 @@ interface TimeSlotSelectorProps {
   onSelectSlot: (slotId: number) => void;
 }
 
+/**
+ * Call the lockSlot endpoint to temporarily reserve a slot
+ */
+async function lockSlot(slotId: number) {
+  const token = await AsyncStorage.getItem("accessToken");
+  if (!token) throw new Error("AUTH_REQUIRED");
+  const response = await axios.put(
+    `${apiEndpoints.lockSlot}?slotId=${slotId}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+}
+
 export default function TimeSlotSelector({
   brandId,
   selectedSlotId,
@@ -36,6 +50,8 @@ export default function TimeSlotSelector({
     {}
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [locking, setLocking] = useState(false);
+  const [lockedSlotId, setLockedSlotId] = useState<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -46,46 +62,30 @@ export default function TimeSlotSelector({
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
-        Toast.show({
-          type: "error",
-          text1: "يجب تسجيل الدخول أولاً",
-        });
+        Toast.show({ type: "error", text1: "يجب تسجيل الدخول أولاً" });
         return;
       }
-
-      const response = await axios.get(
+      const resp = await axios.get(
         `${apiEndpoints.getSlots}?brandId=${brandId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (response.data.success) {
-        const slotsData = response.data.content || [];
+      if (resp.data.success) {
+        const slotsData: TimeSlot[] = resp.data.content || [];
         setSlots(slotsData);
 
-        // Group slots by date
-        const grouped = slotsData.reduce(
-          (acc: Record<string, TimeSlot[]>, slot: TimeSlot) => {
-            if (!acc[slot.date]) {
-              acc[slot.date] = [];
-            }
-            acc[slot.date].push(slot);
-            return acc;
-          },
-          {}
-        );
-
+        // group by date
+        const grouped = slotsData.reduce((acc, slot) => {
+          if (!acc[slot.date]) acc[slot.date] = [];
+          acc[slot.date].push(slot);
+          return acc;
+        }, {} as Record<string, TimeSlot[]>);
         setGroupedSlots(grouped);
 
-        // Set first date as selected if there are dates
         const dates = Object.keys(grouped);
-        if (dates.length > 0) {
-          setSelectedDate(dates[0]);
-        }
+        if (dates.length) setSelectedDate(dates[0]);
       }
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
+    } catch (err) {
+      console.error(err);
       Toast.show({
         type: "error",
         text1: "حدث خطأ أثناء تحميل المواعيد المتاحة",
@@ -95,11 +95,10 @@ export default function TimeSlotSelector({
     }
   };
 
+  // Convert to Arabic date names
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-
-    // Get month name in Arabic
+    const d = new Date(dateString);
+    const day = d.getDate();
     const monthNames = [
       "يناير",
       "فبراير",
@@ -114,9 +113,6 @@ export default function TimeSlotSelector({
       "نوفمبر",
       "ديسمبر",
     ];
-    const month = monthNames[date.getMonth()];
-
-    // Get day name in Arabic
     const dayNames = [
       "الأحد",
       "الإثنين",
@@ -126,13 +122,46 @@ export default function TimeSlotSelector({
       "الجمعة",
       "السبت",
     ];
-    const dayName = dayNames[date.getDay()];
-
-    return { day, month, dayName };
+    return {
+      day,
+      month: monthNames[d.getMonth()],
+      dayName: dayNames[d.getDay()],
+    };
   };
 
+  // 12-hour format
   const formatTime = (timeString: string) => {
-    return timeString.slice(0, 5);
+    const [h, m] = timeString.split(":");
+    let hour = parseInt(h, 10);
+    const minute = m;
+    const ampm = hour >= 12 ? "م" : "ص"; // Arabic AM/PM
+    hour = hour % 12 || 12;
+    return `${hour}:${minute} ${ampm}`;
+  };
+
+  const handleLock = async () => {
+    if (!selectedSlotId) {
+      Toast.show({ type: "error", text1: "الرجاء اختيار موعد أولاً" });
+      return;
+    }
+    setLocking(true);
+    try {
+      const res = await lockSlot(selectedSlotId);
+      if (res.success) {
+        Toast.show({
+          type: "success",
+          text1: res.messageAr || "تم حجز الموعد مؤقتاً",
+        });
+        setLockedSlotId(selectedSlotId);
+      } else {
+        Toast.show({ type: "error", text1: res.messageAr || "فشل حجز الموعد" });
+      }
+    } catch (err) {
+      console.error("Error locking slot:", err);
+      Toast.show({ type: "error", text1: "حدث خطأ أثناء قفل الموعد" });
+    } finally {
+      setLocking(false);
+    }
   };
 
   if (loading) {
@@ -142,8 +171,7 @@ export default function TimeSlotSelector({
       </View>
     );
   }
-
-  if (Object.keys(groupedSlots).length === 0) {
+  if (!Object.keys(groupedSlots).length) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>لا توجد مواعيد متاحة</Text>
@@ -151,9 +179,9 @@ export default function TimeSlotSelector({
     );
   }
 
+  const dates = Object.keys(groupedSlots);
   return (
     <View style={styles.container}>
-      {/* Date Selector */}
       <Text style={styles.title}>التاريخ</Text>
       <ScrollView
         ref={scrollViewRef}
@@ -161,10 +189,8 @@ export default function TimeSlotSelector({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dateScrollContent}
       >
-        {Object.keys(groupedSlots).map((date, index) => {
+        {dates.map((date, idx) => {
           const { day, month, dayName } = formatDate(date);
-          const isToday = index === 0; // Assuming first date is today
-
           return (
             <TouchableOpacity
               key={date}
@@ -177,15 +203,15 @@ export default function TimeSlotSelector({
               <Text
                 style={[
                   styles.dayName,
-                  selectedDate === date && styles.selectedDateText,
+                  selectedDate === date && styles.selectedText,
                 ]}
               >
-                {isToday ? "اليوم" : dayName}
+                {idx === 0 ? "اليوم" : dayName}
               </Text>
               <Text
                 style={[
                   styles.dayNumber,
-                  selectedDate === date && styles.selectedDateText,
+                  selectedDate === date && styles.selectedText,
                 ]}
               >
                 {day}
@@ -193,7 +219,7 @@ export default function TimeSlotSelector({
               <Text
                 style={[
                   styles.monthName,
-                  selectedDate === date && styles.selectedDateText,
+                  selectedDate === date && styles.selectedText,
                 ]}
               >
                 {month}
@@ -203,7 +229,6 @@ export default function TimeSlotSelector({
         })}
       </ScrollView>
 
-      {/* Time Selector */}
       {selectedDate && (
         <>
           <Text style={styles.title}>الوقت</Text>
@@ -212,25 +237,52 @@ export default function TimeSlotSelector({
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.timeScrollContent}
           >
-            {groupedSlots[selectedDate].map((slot) => (
-              <TouchableOpacity
-                key={slot.slotId}
-                style={[
-                  styles.timeCard,
-                  selectedSlotId === slot.slotId && styles.selectedTimeCard,
-                ]}
-                onPress={() => onSelectSlot(slot.slotId)}
-              >
-                <Text
-                  style={[
-                    styles.timeText,
-                    selectedSlotId === slot.slotId && styles.selectedTimeText,
-                  ]}
+            {groupedSlots[selectedDate].map((slot) => {
+              const isThisLocked = slot.slotId === lockedSlotId;
+              return (
+                <View
+                  key={slot.slotId}
+                  style={{ alignItems: "center", marginRight: 12 }}
                 >
-                  {formatTime(slot.timeFrom)} - {formatTime(slot.timeTo)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    style={[
+                      styles.timeCard,
+                      selectedSlotId === slot.slotId && styles.selectedTimeCard,
+                    ]}
+                    onPress={() => onSelectSlot(slot.slotId)}
+                  >
+                    <Text
+                      style={[
+                        styles.timeText,
+                        selectedSlotId === slot.slotId && styles.selectedText,
+                      ]}
+                    >
+                      {formatTime(slot.timeFrom)} - {formatTime(slot.timeTo)}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Lock Button per slot */}
+                  {selectedSlotId === slot.slotId && (
+                    <TouchableOpacity
+                      style={[
+                        styles.lockButton,
+                        (locking || isThisLocked) && styles.disabledButton,
+                      ]}
+                      onPress={handleLock}
+                      disabled={locking || isThisLocked}
+                    >
+                      {locking ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.lockButtonText}>
+                          {isThisLocked ? "محجوز" : "تأكيد حجز الوقت"}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
           </ScrollView>
         </>
       )}
@@ -239,9 +291,7 @@ export default function TimeSlotSelector({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
+  container: { marginBottom: 20 },
   title: {
     fontSize: 16,
     fontWeight: "bold",
@@ -259,12 +309,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  emptyText: {
-    color: "#666",
-  },
-  dateScrollContent: {
-    paddingBottom: 8,
-  },
+  emptyText: { color: "#666" },
+  dateScrollContent: { paddingBottom: 8 },
   dateCard: {
     width: 70,
     height: 80,
@@ -275,46 +321,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 8,
   },
-  selectedDateCard: {
-    backgroundColor: "#0A3981",
-  },
-  dayName: {
-    fontSize: 12,
-    color: "#333",
-    marginBottom: 4,
-  },
-  dayNumber: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  monthName: {
-    fontSize: 12,
-    color: "#666",
-  },
-  selectedDateText: {
-    color: "white",
-  },
-  timeScrollContent: {
-    paddingBottom: 8,
-  },
+  selectedDateCard: { backgroundColor: "#0A3981" },
+  dayName: { fontSize: 12, color: "#333", marginBottom: 4 },
+  dayNumber: { fontSize: 18, fontWeight: "bold", color: "#333" },
+  monthName: { fontSize: 12, color: "#666" },
+  selectedText: { color: "white" },
+  timeScrollContent: { paddingBottom: 8, flexDirection: "row" },
   timeCard: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#f0f0f0",
     borderRadius: 8,
-    marginRight: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    marginBottom: 4,
   },
-  selectedTimeCard: {
+  selectedTimeCard: { backgroundColor: "#0A3981" },
+  timeText: { fontSize: 14, color: "#333" },
+  lockButton: {
+    marginTop: 6,
     backgroundColor: "#0A3981",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
-  timeText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  selectedTimeText: {
-    color: "white",
-  },
+  lockButtonText: { color: "white", fontSize: 14 },
+  disabledButton: { backgroundColor: "#888" },
 });

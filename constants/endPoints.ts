@@ -51,4 +51,5 @@ export const apiEndpoints = {
   getCarModels: (brandId: number) =>
     `${baseUrl}/public/carModel?brandId=${brandId}`,
   getCarColor: `${baseUrl}/public/getCarColor`,
+  lockSlot: `${baseUrl}/consumer/lockSlot`,
 };

@@ -16,6 +16,7 @@ interface UserContextType {
   getCars: () => Promise<void>;
   getAddresses: () => Promise<void>;
   logout: () => Promise<void>;
+  token: string | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -225,6 +226,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         getCars,
         getAddresses,
         logout,
+        token,
       }}
     >
       {children}
