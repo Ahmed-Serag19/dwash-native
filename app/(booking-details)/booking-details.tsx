@@ -46,7 +46,7 @@ export default function BookingDetailsScreen() {
     if (!cartItem) return 0;
     const base = cartItem.itemDto.itemPrice || 0;
     const extrasSum = (cartItem.itemDto.itemExtraDtos || []).reduce(
-      (sum: any, e: any) => sum + e.itemExtraPrice,
+      (sum: number, e: any) => sum + e.itemExtraPrice,
       0
     );
     return base + extrasSum;

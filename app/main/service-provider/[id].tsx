@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -9,152 +9,61 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  Dimensions,
+  I18nManager,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import axios from "axios";
-import { apiEndpoints } from "@/constants/endPoints";
-import type { Freelancer, Service } from "@/interfaces/interfaces";
 import { Star, ArrowLeft } from "lucide-react-native";
 import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUser } from "@/context/UserContext";
 import ServiceAccordion from "@/components/service-provider/ServiceAccordion";
+import Swiper from "react-native-swiper";
 
-// Base URL for images
+import { useProvider } from "@/hooks/useProvider";
+import { useServices } from "@/hooks/useServices";
+import { useReviews } from "@/hooks/useReviews";
+import { addToCart } from "@/services/cartService";
+
+// Force RTL layout for Arabic
+I18nManager.forceRTL(true);
+
+const { width: screenWidth } = Dimensions.get("window");
 const baseImageUrl = "https://api.stg.2025.dwash.cood2.dussur.sa";
-// Default placeholder image for service providers
 const defaultServiceProviderImage = require("@/assets/images/service-providers.jpg");
+const defaultReviewAvatar = require("@/assets/images/dummy-user.avif");
 
 export default function ServiceProviderScreen() {
   const { id } = useLocalSearchParams();
-  const brandId = typeof id === "string" ? Number.parseInt(id) : 0;
+  const brandId = typeof id === "string" ? Number.parseInt(id, 10) : 0;
   const { user } = useUser();
 
-  const [freelancer, setFreelancer] = useState<Freelancer | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    freelancer,
+    loading: loadingProvider,
+    error: providerError,
+  } = useProvider(brandId);
+  const { services, loading: loadingServices } = useServices(brandId);
+  const { reviews, loading: loadingReviews } = useReviews(brandId);
 
-  useEffect(() => {
-    const fetchServiceProvider = async () => {
-      try {
-        // Fetch freelancer details
-        const freelancersResponse = await axios.get(
-          apiEndpoints.getFreelancers(100)
-        );
-        if (freelancersResponse.data.success) {
-          const freelancerData = freelancersResponse.data.content?.data.find(
-            (f: Freelancer) => f.brandId === brandId
-          );
-          if (freelancerData) {
-            setFreelancer(freelancerData);
-          }
-        }
+  const swiperRef = useRef<Swiper>(null);
 
-        // Fetch services for this brand using the corrected endpoint
-        const servicesResponse = await axios.get(
-          apiEndpoints.getServicesByBrandId(brandId)
-        );
-        if (servicesResponse.data.success) {
-          setServices(servicesResponse.data.content || []);
-        }
-      } catch (error) {
-        console.error("Error fetching service provider data:", error);
-        Toast.show({
-          type: "error",
-          text1: "حدث خطأ أثناء تحميل البيانات",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (brandId) {
-      fetchServiceProvider();
-    }
-  }, [brandId]);
+  const goBack = () => {
+    router.back();
+  };
 
   const handleAddToCart = async (
     serviceId: number,
     extraServices: number[]
   ) => {
     if (!user) {
-      Toast.show({
-        type: "info",
-        text1: "يجب تسجيل الدخول أولاً",
-      });
+      Toast.show({ type: "info", text1: "يجب تسجيل الدخول أولاً" });
       router.push("/(auth)/Login");
       return;
     }
-
-    try {
-      const token = await AsyncStorage.getItem("accessToken");
-
-      if (!token) {
-        Toast.show({
-          type: "error",
-          text1: "يجب تسجيل الدخول أولاً",
-        });
-        return;
-      }
-
-      const response = await axios.post(
-        apiEndpoints.addToCart,
-        {
-          serviceId: serviceId,
-          extraServices: extraServices,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.data.success) {
-        Toast.show({
-          type: "success",
-          text1: "تمت الإضافة إلى السلة بنجاح",
-        });
-      }
-    } catch (error) {
-      console.log("Full error:", error);
-
-      if (axios.isAxiosError(error)) {
-        // Check the error response structure
-        const errorMessage =
-          error.response?.data?.messageEn || error.response?.data?.message;
-
-        if (
-          errorMessage &&
-          errorMessage.toLowerCase().includes("already exist")
-        ) {
-          Toast.show({
-            type: "error",
-            text1: "الخدمة موجودة بالفعل في السلة",
-          });
-          return;
-        }
-
-        // Handle other API errors
-        const errorText =
-          error.response?.data?.messageAr ||
-          "حدث خطأ أثناء إضافة الخدمة إلى السلة";
-        Toast.show({
-          type: "error",
-          text1: errorText,
-        });
-        return;
-      }
-
-      // Handle non-API errors
-      console.error("Error adding to cart:", error);
-      Toast.show({
-        type: "error",
-        text1: "حدث خطأ غير متوقع أثناء إضافة الخدمة إلى السلة",
-      });
-    }
-  };
-  const goBack = () => {
-    router.back();
+    await addToCart({ serviceId, extraServices });
   };
 
-  if (loading) {
+  if (loadingProvider) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0A3981" />
@@ -162,10 +71,12 @@ export default function ServiceProviderScreen() {
     );
   }
 
-  if (!freelancer) {
+  if (providerError || !freelancer) {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>لم يتم العثور على مزود الخدمة</Text>
+        <Text style={styles.errorText}>
+          {providerError || "لم يتم العثور على مزود الخدمة"}
+        </Text>
         <TouchableOpacity style={styles.backButton} onPress={goBack}>
           <Text style={styles.backButtonText}>العودة</Text>
         </TouchableOpacity>
@@ -178,7 +89,7 @@ export default function ServiceProviderScreen() {
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
-        translucent={true}
+        translucent
       />
 
       {/* Header */}
@@ -194,7 +105,7 @@ export default function ServiceProviderScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Service Provider Banner */}
+        {/* Banner */}
         <View style={styles.bannerContainer}>
           <Image
             source={
@@ -227,8 +138,9 @@ export default function ServiceProviderScreen() {
         {/* Services List */}
         <View style={styles.servicesContainer}>
           <Text style={styles.servicesTitle}>الخدمات المتاحة</Text>
-
-          {services.length > 0 ? (
+          {loadingServices ? (
+            <ActivityIndicator size="small" color="#0A3981" />
+          ) : services.length > 0 ? (
             services.map((service) => (
               <ServiceAccordion
                 key={service.serviceId}
@@ -239,6 +151,53 @@ export default function ServiceProviderScreen() {
           ) : (
             <View style={styles.noServicesContainer}>
               <Text style={styles.noServicesText}>لا توجد خدمات متاحة</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Reviews Carousel */}
+        <View style={styles.reviewsContainer}>
+          <Text style={styles.reviewsTitle}>التقييمات</Text>
+          {loadingReviews ? (
+            <ActivityIndicator size="small" color="#0A3981" />
+          ) : reviews.length === 0 ? (
+            <Text style={styles.noReviewsText}>لا توجد تقييمات بعد</Text>
+          ) : (
+            <View style={styles.swiperWrapper}>
+              <Swiper
+                ref={swiperRef}
+                autoplay
+                autoplayTimeout={4}
+                loop
+                showsPagination
+                dot={<View style={styles.dot} />}
+                activeDot={<View style={styles.activeDot} />}
+                height={180}
+              >
+                {reviews.map((rev, idx) => (
+                  <View key={idx} style={styles.reviewSlide}>
+                    <Image
+                      source={defaultReviewAvatar}
+                      style={styles.reviewAvatar}
+                      resizeMode="cover"
+                    />
+                    <Text style={styles.reviewUsername}>{rev.username}</Text>
+                    <View style={styles.reviewStars}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          size={18}
+                          color={n <= rev.appraisal ? "#FFD700" : "#BFBDBD"}
+                          fill={n <= rev.appraisal ? "#FFD700" : "none"}
+                        />
+                      ))}
+                    </View>
+                    <Text style={styles.reviewDescription} numberOfLines={2}>
+                      {rev.description}
+                    </Text>
+                  </View>
+                ))}
+              </Swiper>
             </View>
           )}
         </View>
@@ -356,7 +315,7 @@ const styles = StyleSheet.create({
   servicesContainer: {
     padding: 16,
     backgroundColor: "#fff",
-    marginBottom: 50,
+    marginBottom: 24,
   },
   servicesTitle: {
     fontSize: 18,
@@ -372,5 +331,77 @@ const styles = StyleSheet.create({
   noServicesText: {
     fontSize: 16,
     color: "#666",
+  },
+  reviewsContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
+    marginBottom: 50,
+  },
+  reviewsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#0A3981",
+    marginBottom: 16,
+    textAlign: "right",
+  },
+  noReviewsText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginVertical: 8,
+  },
+  swiperWrapper: {
+    height: 180,
+  },
+  reviewSlide: {
+    flex: 1,
+    backgroundColor: "#fff",
+    marginHorizontal: 8,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reviewAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginBottom: 8,
+    alignSelf: "flex-end",
+  },
+  reviewUsername: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 6,
+    textAlign: "right",
+  },
+  reviewStars: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  reviewDescription: {
+    fontSize: 14,
+    color: "#444",
+    textAlign: "right",
+  },
+  dot: {
+    backgroundColor: "#ccc",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 3,
+  },
+  activeDot: {
+    backgroundColor: "#0A3981",
+    width: 16,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 3,
   },
 });

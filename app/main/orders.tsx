@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,109 +8,154 @@ import {
   ActivityIndicator,
   StyleSheet,
   Dimensions,
-  Modal,
-  Alert,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiEndpoints } from "@/constants/endPoints";
 import Toast from "react-native-toast-message";
 import OrderCardMobile from "@/components/orders/OrderCard";
-
 import { OrderData } from "@/interfaces/interfaces";
+import { useUser } from "@/context/UserContext";
 
 const { width } = Dimensions.get("window");
+const PAGE_SIZE = 100; // you can adjust as needed
 
 const OrdersScreen = () => {
   const [activeTab, setActiveTab] = useState<"current" | "closed">("current");
-  const [currentOrders, setCurrentOrders] = useState([]);
-  const [closedOrders, setClosedOrders] = useState([]);
+  const [currentOrders, setCurrentOrders] = useState<OrderData[]>([]);
+  const [closedOrders, setClosedOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const { token } = useUser(); // assuming your context provides `token`
+
+  // Fetch orders from API and split into “current” vs. “closed”
   const fetchOrders = async () => {
     setLoading(true);
-    const token = await AsyncStorage.getItem("accessToken");
     try {
-      const response = await axios.get(apiEndpoints.getOrders(1, 100), {
+      const storedToken = await AsyncStorage.getItem("accessToken");
+      const response = await axios.get(apiEndpoints.getOrders(1, PAGE_SIZE), {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${storedToken}`,
         },
       });
 
       if (response.data.success) {
-        const orders = response.data.content.data;
+        const orders: OrderData[] = response.data.content.data;
 
+        // Status names that count as “closed”
+        const closedStatuses = [
+          "REJECTED",
+          "COMPLETED",
+          "COMPLETED_BY_ADMIN",
+          "CANCELLED_BY_ADMIN",
+          "CANCELLED",
+          "REFUNDED",
+        ];
+
+        // Split:
         const current = orders.filter(
-          (order: OrderData) =>
-            ![
-              "REJECTED",
-              "COMPLETED",
-              "COMPLETED_BY_ADMIN",
-              "CANCELLED_BY_ADMIN",
-              "CANCELLED",
-              "REFUNDED",
-            ].includes(order.request.statusName)
+          (order) => !closedStatuses.includes(order.request.statusName)
         );
-
-        const closed = orders.filter((order: OrderData) =>
-          [
-            "REJECTED",
-            "COMPLETED",
-            "COMPLETED_BY_ADMIN",
-            "CANCELLED_BY_ADMIN",
-            "CANCELLED",
-            "REFUNDED",
-          ].includes(order.request.statusName)
+        const closed = orders.filter((order) =>
+          closedStatuses.includes(order.request.statusName)
         );
 
         setCurrentOrders(current);
         setClosedOrders(closed);
       } else {
-        Toast.show({ type: "error", text1: response.data.messageAr });
+        // Show Arabic message if available, otherwise a generic one
+        Toast.show({
+          type: "error",
+          text1: response.data.messageAr || "فشل في جلب الطلبات",
+        });
       }
-    } catch (err) {
-      const errorMessage =
-        typeof err === "object" && err !== null && "messageAr" in err
-          ? (err as any).messageAr
-          : "An error occurred";
-      Toast.show({ type: "error", text1: errorMessage });
+    } catch (error: any) {
+      const errMsg =
+        error.response?.data?.messageAr || "حدث خطأ أثناء جلب الطلبات";
+      Toast.show({ type: "error", text1: errMsg });
     } finally {
       setLoading(false);
     }
   };
 
+  // Pull‐to‐refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchOrders();
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const handleCancelOrder = async (orderId: number) => {
-    const token = await AsyncStorage.getItem("accessToken");
+  // Called when user submits a review
+  const handleAddReview = async (
+    requestId: number,
+    appraisal: number,
+    description: string
+  ) => {
     try {
-      const response = await axios.put(
-        apiEndpoints.cancelOrder(orderId),
-        null,
+      const response = await axios.post(
+        apiEndpoints.addReview(requestId),
+        { appraisal, description },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (response.data.success) {
-        Toast.show({ type: "success", text1: "تم الغاء الطلب" });
-        fetchOrders();
+        Toast.show({
+          type: "success",
+          text1: "تم إضافة التقييم بنجاح", // “Review added successfully”
+        });
+        // Re-fetch to update the UI (so the “Add Review” button goes away)
+        await fetchOrders();
       } else {
-        Toast.show({ type: "error", text1: response.data.messageAr });
+        Toast.show({
+          type: "error",
+          text1: response.data.messageAr || "فشل إضافة التقييم",
+        });
       }
-    } catch {
-      Toast.show({ type: "error", text1: "فشل الغاء الطلب" });
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+        Toast.show({ type: "error", text1: "فشل إضافة التقييم" });
+      }
     }
   };
+
+  // Called when user cancels an order
+  const handleCancelOrder = async (orderId: number) => {
+    try {
+      const storedToken = await AsyncStorage.getItem("accessToken");
+      const response = await axios.put(
+        apiEndpoints.cancelOrder(orderId),
+        null,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }
+      );
+      if (response.data.success) {
+        Toast.show({
+          type: "success",
+          text1: "تم إلغاء الطلب بنجاح", // “Order canceled successfully”
+        });
+        await fetchOrders();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: response.data.messageAr || "فشل إلغاء الطلب",
+        });
+      }
+    } catch {
+      Toast.show({ type: "error", text1: "فشل إلغاء الطلب" });
+    }
+  };
+
+  // On first load:
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   return (
     <ScrollView
@@ -121,21 +166,37 @@ const OrdersScreen = () => {
     >
       <Text style={styles.title}>الطلبات</Text>
 
+      {/* Tab Buttons */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "current" && styles.tabActive]}
           onPress={() => setActiveTab("current")}
         >
-          <Text style={styles.tabText}>الطلبات الحالية</Text>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "current" && styles.tabTextActive,
+            ]}
+          >
+            الطلبات الحالية
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "closed" && styles.tabActive]}
           onPress={() => setActiveTab("closed")}
         >
-          <Text style={styles.tabText}>الطلبات المغلقة</Text>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "closed" && styles.tabTextActive,
+            ]}
+          >
+            الطلبات المغلقة
+          </Text>
         </TouchableOpacity>
       </View>
 
+      {/* Loading Spinner */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -151,9 +212,9 @@ const OrdersScreen = () => {
                 order={order}
                 isClosed={activeTab === "closed"}
                 onCancel={() => handleCancelOrder(order.request.id)}
-                onAddReview={(id, rating, desc) => {
-                  // implement review logic here
-                }}
+                onAddReview={(id, rating, desc) =>
+                  handleAddReview(id, rating, desc)
+                }
               />
             )
           )}
@@ -170,6 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     padding: 16,
+    marginBottom: 120,
   },
   title: {
     fontSize: 22,
@@ -194,8 +256,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#0A3981",
   },
   tabText: {
-    color: "white",
+    color: "#333",
     fontWeight: "600",
+  },
+  tabTextActive: {
+    color: "#fff",
   },
   ordersList: {
     gap: 16,

@@ -8,21 +8,23 @@ import {
   TextInput,
   Dimensions,
 } from "react-native";
-import StarRating from "./StarRating";
+import StarRating from "./StarRating"; // assume this shows tappable stars
 
 const { width } = Dimensions.get("window");
 const isSmallScreen = width < 360;
 
-const OrderCardMobile = ({
-  order,
-  isClosed,
-  onCancel,
-  onAddReview,
-}: {
+interface OrderCardMobileProps {
   order: any;
   isClosed: boolean;
   onCancel?: () => void;
   onAddReview?: (requestId: number, rating: number, comment: string) => void;
+}
+
+const OrderCardMobile: React.FC<OrderCardMobileProps> = ({
+  order,
+  isClosed,
+  onCancel,
+  onAddReview,
 }) => {
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -40,7 +42,8 @@ const OrderCardMobile = ({
     totalAmount,
   } = order;
 
-  const statusMap: any = {
+  // Map status codes to Arabic text
+  const statusMap: Record<string, string> = {
     WAITING: "في الانتظار",
     COMPLETED: "مكتمل",
     COMPLETED_BY_ADMIN: "مكتمل من المشرف",
@@ -58,22 +61,25 @@ const OrderCardMobile = ({
 
       {userPhoneNumber && (
         <Text style={styles.row}>
-          <Text style={styles.label}>رقم الهاتف:</Text> {userPhoneNumber}
+          <Text style={styles.label}>رقم الهاتف: </Text>
+          {userPhoneNumber}
         </Text>
       )}
 
       {!isClosed && fromTime && timeTo && (
         <Text style={styles.row}>
-          <Text style={styles.label}>الوقت:</Text> {fromTime} - {timeTo}
+          <Text style={styles.label}>الوقت: </Text>
+          {fromTime} - {timeTo}
         </Text>
       )}
 
       <Text style={styles.row}>
-        <Text style={styles.label}>التاريخ:</Text> {reservationDate}
+        <Text style={styles.label}>التاريخ: </Text>
+        {reservationDate}
       </Text>
 
       <Text style={styles.row}>
-        <Text style={styles.label}>الحالة:</Text>{" "}
+        <Text style={styles.label}>الحالة: </Text>
         <Text
           style={[
             styles.status,
@@ -88,15 +94,18 @@ const OrderCardMobile = ({
       </Text>
 
       <Text style={styles.row}>
-        <Text style={styles.label}>الخدمة:</Text> {itemDto.itemNameAr}
+        <Text style={styles.label}>الخدمة: </Text>
+        {itemDto.itemNameAr}
       </Text>
 
       <Text style={styles.row}>
-        <Text style={styles.label}>نوع الخدمة:</Text> {itemDto.serviceTypeAr}
+        <Text style={styles.label}>نوع الخدمة: </Text>
+        {itemDto.serviceTypeAr}
       </Text>
 
       <Text style={styles.row}>
-        <Text style={styles.label}>السعر:</Text> {itemDto.itemPrice} ريال
+        <Text style={styles.label}>السعر: </Text>
+        {itemDto.itemPrice} ريال
       </Text>
 
       {itemDto.itemExtraDtos?.length > 0 && (
@@ -104,23 +113,26 @@ const OrderCardMobile = ({
           <Text style={styles.label}>الإضافات:</Text>
           {itemDto.itemExtraDtos.map((extra: any, i: number) => (
             <Text key={i} style={styles.extra}>
-              {extra.itemExtraNameAr} - {extra.itemExtraPrice} ريال
+              {extra.itemExtraNameAr} – {extra.itemExtraPrice} ريال
             </Text>
           ))}
         </View>
       )}
 
       <Text style={[styles.row, { marginTop: 4 }]}>
-        <Text style={styles.label}>الإجمالي:</Text> {totalAmount} ريال
+        <Text style={styles.label}>الإجمالي: </Text>
+        {totalAmount} ريال
       </Text>
 
       <View style={styles.buttonContainer}>
+        {/* “Cancel Order” button (only if not closed) */}
         {!isClosed && onCancel && (
           <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
             <Text style={styles.btnText}>إلغاء الطلب</Text>
           </TouchableOpacity>
         )}
 
+        {/* “Add Review” button (only if status is COMPLETED and not yet reviewed) */}
         {request.statusName === "COMPLETED" && !reviewed && onAddReview && (
           <TouchableOpacity
             style={styles.reviewBtn}
@@ -131,7 +143,7 @@ const OrderCardMobile = ({
         )}
       </View>
 
-      {/* تقييم */}
+      {/* Review Modal */}
       <Modal visible={isReviewModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -163,10 +175,11 @@ const OrderCardMobile = ({
                 onPress={() => {
                   if (onAddReview) {
                     onAddReview(request.id, rating, comment);
-                    setIsReviewModalVisible(false);
                   }
-
                   setIsReviewModalVisible(false);
+                  // Reset rating/comment if you want:
+                  setRating(0);
+                  setComment("");
                 }}
               >
                 <Text style={styles.btnText}>إرسال</Text>
