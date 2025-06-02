@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,14 +23,18 @@ import { useProvider } from "@/hooks/useProvider";
 import { useServices } from "@/hooks/useServices";
 import { useReviews } from "@/hooks/useReviews";
 import { addToCart } from "@/services/cartService";
+import { images } from "@/constants/images";
 
-// Force RTL layout for Arabic
 I18nManager.forceRTL(true);
 
 const { width: screenWidth } = Dimensions.get("window");
 const baseImageUrl = "https://api.stg.2025.dwash.cood2.dussur.sa";
-const defaultServiceProviderImage = require("@/assets/images/service-providers.jpg");
-const defaultReviewAvatar = require("@/assets/images/dummy-user.avif");
+
+interface Review {
+  username: string;
+  description: string;
+  appraisal: number;
+}
 
 export default function ServiceProviderScreen() {
   const { id } = useLocalSearchParams();
@@ -46,6 +50,7 @@ export default function ServiceProviderScreen() {
   const { reviews, loading: loadingReviews } = useReviews(brandId);
 
   const swiperRef = useRef<Swiper>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const goBack = () => {
     router.back();
@@ -92,7 +97,6 @@ export default function ServiceProviderScreen() {
         translucent
       />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={goBack} style={styles.backButton}>
           <ArrowLeft size={24} color="#0A3981" />
@@ -105,13 +109,12 @@ export default function ServiceProviderScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Banner */}
         <View style={styles.bannerContainer}>
           <Image
             source={
               freelancer.brandLogo
                 ? { uri: `${baseImageUrl}${freelancer.brandLogo}` }
-                : defaultServiceProviderImage
+                : images.defaultServiceProviderImage
             }
             style={styles.bannerImage}
             resizeMode="cover"
@@ -127,7 +130,6 @@ export default function ServiceProviderScreen() {
           </View>
         </View>
 
-        {/* Description */}
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionTitle}>الوصف</Text>
           <Text style={styles.descriptionText}>
@@ -135,7 +137,6 @@ export default function ServiceProviderScreen() {
           </Text>
         </View>
 
-        {/* Services List */}
         <View style={styles.servicesContainer}>
           <Text style={styles.servicesTitle}>الخدمات المتاحة</Text>
           {loadingServices ? (
@@ -155,49 +156,77 @@ export default function ServiceProviderScreen() {
           )}
         </View>
 
-        {/* Reviews Carousel */}
         <View style={styles.reviewsContainer}>
-          <Text style={styles.reviewsTitle}>التقييمات</Text>
+          <Text style={styles.reviewsTitle}>آراء العملاء</Text>
           {loadingReviews ? (
             <ActivityIndicator size="small" color="#0A3981" />
           ) : reviews.length === 0 ? (
-            <Text style={styles.noReviewsText}>لا توجد تقييمات بعد</Text>
+            <View style={styles.noReviewsContainer}>
+              <Text style={styles.noReviewsText}>لا توجد تقييمات بعد</Text>
+            </View>
           ) : (
-            <View style={styles.swiperWrapper}>
+            <View style={styles.carouselContainer}>
               <Swiper
                 ref={swiperRef}
                 autoplay
-                autoplayTimeout={4}
+                autoplayTimeout={5}
                 loop
-                showsPagination
-                dot={<View style={styles.dot} />}
-                activeDot={<View style={styles.activeDot} />}
-                height={180}
+                showsPagination={false}
+                height={220}
+                onIndexChanged={(index) => setCurrentIndex(index)}
               >
-                {reviews.map((rev, idx) => (
-                  <View key={idx} style={styles.reviewSlide}>
-                    <Image
-                      source={defaultReviewAvatar}
-                      style={styles.reviewAvatar}
-                      resizeMode="cover"
-                    />
-                    <Text style={styles.reviewUsername}>{rev.username}</Text>
-                    <View style={styles.reviewStars}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
-                          key={n}
-                          size={18}
-                          color={n <= rev.appraisal ? "#FFD700" : "#BFBDBD"}
-                          fill={n <= rev.appraisal ? "#FFD700" : "none"}
-                        />
-                      ))}
+                {reviews.map((rev: Review, idx: number) => (
+                  <View key={idx} style={styles.reviewCard}>
+                    <View style={styles.reviewHeader}>
+                      <Image
+                        source={images.defaultReviewAvatar}
+                        style={styles.reviewAvatar}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.reviewUserInfo}>
+                        <Text style={styles.reviewUsername}>
+                          {rev.username}
+                        </Text>
+                        <Text style={styles.reviewDate}>منذ شهر</Text>
+                      </View>
+                      <View style={styles.reviewRating}>
+                        <Star size={20} color="#FFD700" fill="#FFD700" />
+                        <Text style={styles.reviewRatingText}>
+                          {rev.appraisal.toFixed(1)}
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={styles.reviewDescription} numberOfLines={2}>
-                      {rev.description}
-                    </Text>
+                    <View style={styles.reviewBody}>
+                      <Text style={styles.reviewDescription} numberOfLines={4}>
+                        {rev.description || "تقييم عام جيد"}
+                      </Text>
+                    </View>
+                    <View style={styles.reviewFooter}>
+                      <View style={styles.reviewStars}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={18}
+                            color={n <= rev.appraisal ? "#FFD700" : "#E0E0E0"}
+                            fill={n <= rev.appraisal ? "#FFD700" : "none"}
+                          />
+                        ))}
+                      </View>
+                    </View>
                   </View>
                 ))}
               </Swiper>
+              <View style={styles.customPagination}>
+                {reviews.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.paginationDot,
+                      currentIndex === index && styles.activeDot,
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
           )}
         </View>
@@ -210,6 +239,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    marginBottom: 70,
   },
   loadingContainer: {
     flex: 1,
@@ -335,73 +365,125 @@ const styles = StyleSheet.create({
   reviewsContainer: {
     padding: 16,
     backgroundColor: "#fff",
-    marginBottom: 50,
+    marginBottom: 24,
   },
   reviewsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#0A3981",
-    marginBottom: 16,
+    marginBottom: 20,
     textAlign: "right",
   },
-  noReviewsText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginVertical: 8,
-  },
-  swiperWrapper: {
-    height: 180,
-  },
-  reviewSlide: {
-    flex: 1,
-    backgroundColor: "#fff",
-    marginHorizontal: 8,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: "flex-end",
+  noReviewsContainer: {
+    alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyReviewsImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+    opacity: 0.6,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    color: "#888",
+    textAlign: "center",
+  },
+  carouselContainer: {
+    height: 250,
+    marginBottom: 16,
+  },
+  reviewCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 8,
+    height: 200,
     shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
   reviewAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginBottom: 8,
-    alignSelf: "flex-end",
+    borderWidth: 2,
+    borderColor: "#0A3981",
+  },
+  reviewUserInfo: {
+    flex: 1,
+    marginRight: 12,
+    alignItems: "flex-end",
   },
   reviewUsername: {
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 6,
-    textAlign: "right",
   },
-  reviewStars: {
+  reviewDate: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 4,
+  },
+  reviewRating: {
     flexDirection: "row",
-    marginBottom: 8,
+    alignItems: "center",
+    backgroundColor: "#F8F8F8",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  reviewRatingText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 4,
+  },
+  reviewBody: {
+    flex: 1,
+    marginBottom: 12,
   },
   reviewDescription: {
     fontSize: 14,
-    color: "#444",
+    lineHeight: 22,
+    color: "#555",
     textAlign: "right",
   },
-  dot: {
-    backgroundColor: "#ccc",
+  reviewFooter: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  reviewStars: {
+    flexDirection: "row",
+  },
+  customPagination: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  paginationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginHorizontal: 3,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: "#0A3981",
     width: 16,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 3,
+    backgroundColor: "#0A3981",
   },
 });
